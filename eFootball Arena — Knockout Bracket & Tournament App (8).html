@@ -6055,7 +6055,40 @@
       document.getElementById('btn-import-replace').addEventListener('click', () => {
         importDatabaseFromPayload(document.getElementById('bk-raw-textarea').value, true);
       });
+  const originalSaveState = typeof saveState === "function" ? saveState : null;
+  if (originalSaveState) {
+    saveState = function () {
+      originalSaveState();
+      if (window.__firestoreBridge) {
+        window.__firestoreBridge.pushState(state);
+      }
+    };
+  }
 
+  if (window.__firestoreBridge) {
+    window.__firestoreBridge.subscribe((remoteState) => {
+      if (!remoteState || typeof remoteState !== "object") return;
+      const keepUserId = state.currentUserId;
+      Object.assign(state, remoteState);
+      if (keepUserId && state.users && state.users[keepUserId]) {
+        state.currentUserId = keepUserId;
+      }
+      try {
+        localStorage.setItem("efootball_arena_master_db_v1", JSON.stringify(state));
+      } catch (e) {}
+      if (getCurrentUser()) {
+        renderShell();
+      } else {
+        const bannedMatch = findBannedMatch({ userId: state.currentUserId || "" });
+        if (bannedMatch) {
+          showBannedScreen(bannedMatch);
+        } else {
+          setAuthMode("register");
+        }
+      }
+    });
+    }
+              
       /* ==================== INITIAL BOOT ==================== */
       setAuthMode('register');
       if (getCurrentUser()) {
@@ -6070,6 +6103,44 @@
   </script>
 </body>
 </html>
+  const arenaDocRef = doc(db, "arenaState", "master_v1");
+  let isApplyingRemote = false;
+
+  window.__firestoreBridge = {
+    async pushState(nextState) {
+      if (isApplyingRemote) return;
+      try {
+        await setDoc(
+          arenaDocRef,
+          {
+            payload: JSON.stringify(nextState),
+            updatedAt: Date.now()
+          },
+          { merge: true }
+        );
+      } catch (err) {
+        console.error("Firestore push error:", err);
+      }
+    },
+
+    subscribe(onRemoteUpdate) {
+      return onSnapshot(arenaDocRef, (snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        if (!data || !data.payload) return;
+        try {
+          const parsed = JSON.parse(data.payload);
+          isApplyingRemote = true;
+          onRemoteUpdate(parsed);
+        } catch (err) {
+          console.error("Firestore snapshot error:", err);
+        } finally {
+          isApplyingRemote = false;
+        }
+      });
+    }
+  };
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
   import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
