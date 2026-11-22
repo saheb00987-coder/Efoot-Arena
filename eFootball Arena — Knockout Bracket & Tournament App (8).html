@@ -6070,3 +6070,21 @@
   </script>
 </body>
 </html>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyACBAKAPcEjcrNeTM_ZkFl3DrtCOkXaF8Y",
+    authDomain: "efoot-arena-10b0e.firebaseapp.com",
+    projectId: "efoot-arena-10b0e",
+    storageBucket: "efoot-arena-10b0e.firebasestorage.app",
+    messagingSenderId: "1005187099109",
+    appId: "1:1005187099109:web:4e6cc3e20caef71727670c"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+</script>
